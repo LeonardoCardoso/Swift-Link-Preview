@@ -678,21 +678,27 @@ extension SwiftLinkPreview {
         var image = image
 
         // TODO: account for HTML <base>
-        if let canonicalUrl = canonicalUrl, let finalUrl = finalUrl {
-            if finalUrl.hasPrefix("https:") {
+        if let canonicalUrl = canonicalUrl, let finalUrl = finalUrl, let proto = finalUrl.split(separator: ":").first {
+            if image.hasPrefix("/") {
                 if image.hasPrefix("//") {
-                    image = "https:" + image
-                } else if image.hasPrefix("/") {
-                    image = "https://" + canonicalUrl + image
+                    // image url is //domain/path
+                    image = proto + ":" + image
+                } else {
+                    // image url is /path relative to base url
+                    image = proto + "://" + canonicalUrl + image
                 }
-            } else if image.hasPrefix("//") {
-                image = "http:" + image
-            } else if image.hasPrefix("/") {
-                image = "http://" + canonicalUrl + image
+            } else if !image.contains("://") {
+                // image is relative to request url
+                let requestUrl = removeSuffixIfNeeded(finalUrl)
+                if requestUrl.hasSuffix("/") {
+                    image = requestUrl + image
+                } else {
+                    image = (requestUrl as NSString).deletingLastPathComponent + "/" + image
+                }
             }
         }
 
-        return removeSuffixIfNeeded(image)
+        return image
 
     }
 
